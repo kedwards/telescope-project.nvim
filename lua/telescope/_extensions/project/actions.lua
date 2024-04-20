@@ -6,6 +6,10 @@ local transform_mod = require('telescope.actions.mt').transform_mod
 local _git = require("telescope._extensions.project.git")
 local _utils = require("telescope._extensions.project.utils")
 
+-- We cache the results of "git rev-parse"
+-- Process creation is expensive in Windows, so this reduces latency
+local is_inside_work_tree = {}
+
 local M = {}
 
 -- current cd scope
@@ -128,15 +132,27 @@ M.delete_project = function(prompt_bufnr)
 end
 
 -- Find files within the selected project using the
--- Telescope builtin `find_files`.
+-- Telescope builtin `find_files` or extension `git-worktree`.
 M.find_project_files = function(prompt_bufnr, hidden_files)
   local project_path = M.get_selected_path(prompt_bufnr)
   actions._close(prompt_bufnr, true)
   local cd_successful = _utils.change_project_dir(project_path, cd_scope)
   if cd_successful then
-    vim.schedule(function()
-      builtin.find_files({cwd = project_path, hidden = hidden_files})
-    end)
+    local cwd = vim.fn.getcwd()
+    if is_inside_work_tree[cwd] == nil then
+      vim.fn.system("git rev-parse --is-inside-work-tree")
+      is_inside_work_tree[cwd] = vim.v.shell_error == 0
+    end
+
+    if is_inside_work_tree[cwd] then
+      vim.schedule(function()
+        require('telescope').extensions.git_worktree.git_worktrees()
+      end)
+    else
+      vim.schedule(function()
+        builtin.find_files({cwd = project_path, hidden = hidden_files})
+      end)
+    end
   end
 end
 

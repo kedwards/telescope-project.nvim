@@ -3,6 +3,8 @@
 An extension for [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)
 that allows you to switch between projects.
 
+**this branch adds additional functionality to detect worktree and browse worktrees or find_files after project selection**
+
 ## Demo
 
 ![Demo](./demo.gif)
@@ -10,6 +12,7 @@ that allows you to switch between projects.
 ## Requirements
 
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) (required)
+- [git-worktree.nvim](https://github.com/ThePrimeagen/git-worktree.nvim) (required)
 - [telescope-file-browser.nvim](https://github.com/nvim-telescope/telescope-file-browser.nvim) (optional, only for `file_browser` action)
 
 ## Setup
