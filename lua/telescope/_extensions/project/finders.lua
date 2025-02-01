@@ -9,6 +9,7 @@ local M = {}
 -- and list of projects
 M.project_finder = function(opts, projects)
   local display_type = opts.display_type
+  local show_workspace = not opts.hide_workspace
   local widths = {
     title = 0,
     display_path = 0,
@@ -17,36 +18,48 @@ M.project_finder = function(opts, projects)
   -- Loop over all of the projects and find the maximum length of
   -- each of the keys
   for _, project in pairs(projects) do
+    local display_path = project.path:gsub('\n', '\\n') -- otherwise the picker might not open due to a 'Cursor position outside buffer' error
     if display_type == 'full' then
-      project.display_path = '[' .. project.path .. ']'
+      project.display_path = '[' .. display_path .. ']'
     elseif display_type == 'two-segment' then
-      project.display_path = '[' .. string.match(project.path, '([^/]+/[^/]+)/?$') .. ']'
+      project.display_path = '[' .. string.match(display_path, '([^/]+/[^/]+)/?$') .. ']'
     else
       project.display_path = ''
     end
+    project.display_title = project.title:gsub('\n', '\\n')
     local project_path_exists = Path:new(project.path):exists()
     if not project_path_exists then
-      project.title = project.title .. " [deleted]"
+      project.display_title = project.display_title .. " [deleted]"
     end
     for key, value in pairs(widths) do
       widths[key] = math.max(value, strings.strdisplaywidth(project[key] or ''))
     end
   end
 
-  local displayer = entry_display.create {
+  local create_opts = {
     separator = " ",
     items = {
       { width = widths.title },
-      { width = widths.workspace },
       { width = widths.display_path },
     }
   }
+
+  if show_workspace then
+    table.insert(create_opts.items, 2, { width = widths.workspace })
+  end
+
+  local displayer = entry_display.create(create_opts)
   local make_display = function(project)
-    return displayer {
-      { project.title },
-      { project.workspace },
+    local display_opts = {
+      { project.display_title },
       { project.display_path }
     }
+
+    if show_workspace then
+      table.insert(display_opts, 2, { project.workspace })
+    end
+
+    return displayer(display_opts)
   end
 
   return finders.new_table {
